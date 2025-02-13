@@ -25,7 +25,7 @@ namespace BasicPlatformer.Generators
         private BasicPlatformerSettings settings;
 
         [SerializeField] [Required] private Tilemap groundTilemap;
-
+        [SerializeField] [Required] private Tilemap backgroundTilemap;
         // Auto-assign a tilemap if not set
         private void OnValidate()
         {
@@ -46,6 +46,8 @@ namespace BasicPlatformer.Generators
             TopTileType[] topTileTypes = DetermineCornerTiles(heights);
             // Step 3. Render the terrain
             RenderTiles(heights, topTileTypes);
+            // Step 4. Render the background
+            RenderSkyBackground(heights);
         }
 
         private int[] GenerateHeights()
@@ -178,6 +180,31 @@ namespace BasicPlatformer.Generators
                 }
             }
         }
+
+        private void RenderSkyBackground(int[] heights)
+        {
+            int width = heights.Length;
+            
+            // Finding the highest tile from the array
+            int highestTile = int.MinValue;
+            for (int i = 0; i < heights.Length; i++)
+            {
+                if (heights[i] > highestTile)
+                    highestTile = heights[i];
+            }
+            //The maximum height of the sky (highest tile in the array + the fill extra
+            int maxSkyHeight = highestTile + settings.SkyBackgroundFillExtra;
+            
+            //Loop through every x value and its corresping area of the sky to draw the sky tile
+            for (int x = 0; x < width; x++)
+            {
+                int colTop = heights[x];
+                for (int y = colTop + 1; y <= maxSkyHeight; y++)
+                {
+                    backgroundTilemap.SetTile(new Vector3Int(x,y,-1),settings.SkyTile);
+                }
+            }
+        }
         
         [Button("Reset Terrain")]
         public void ResetTerrain()
@@ -188,6 +215,7 @@ namespace BasicPlatformer.Generators
                 return;
             }
             groundTilemap.ClearAllTiles();
+            backgroundTilemap.ClearAllTiles();
         }
     }
 }
