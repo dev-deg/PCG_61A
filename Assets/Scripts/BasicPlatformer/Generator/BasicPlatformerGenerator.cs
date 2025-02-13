@@ -43,9 +43,9 @@ namespace BasicPlatformer.Generators
             // Step 1. Randomise Terrain
             int[] heights = GenerateHeights();
             // Step 2. Determine Corner Placement
-
+            TopTileType[] topTileTypes = DetermineCornerTiles(heights);
             // Step 3. Render the terrain
-            RenderTiles(heights, null);
+            RenderTiles(heights, topTileTypes);
         }
 
         private int[] GenerateHeights()
@@ -87,6 +87,63 @@ namespace BasicPlatformer.Generators
             return heights;
         }
 
+        private TopTileType[] DetermineCornerTiles(int[] heights)
+        {
+            int width = heights.Length;
+            int dirtDepth = settings.DirtDepth;
+            TopTileType[] topTileTypes = new TopTileType[width];
+
+            for (int x = 0; x < width; x++)
+            {
+                int H = heights[x];
+                bool leftOccupied = false;
+                bool rightOccupied = false;
+                
+                //Checking the left neighbour
+                if (x > 0)
+                {
+                    int leftTop = heights[x - 1];
+                    leftOccupied = (H >= leftTop - dirtDepth) && (H <= leftTop);
+                }
+                
+                //Checking the right neighbour
+                if (x < width-1)
+                {
+                    int rightTop = heights[x + 1];
+                    rightOccupied = (H >= rightTop - dirtDepth) && (H <= rightTop);
+                }
+                
+                //if this is the first tile we set to left grass corner
+                if (x == 0)
+                {
+                    topTileTypes[x] = TopTileType.LeftCornerGrass;
+                    //if this is the last tile we set to right grass corner
+                }else if (x == width - 1)
+                {
+                    topTileTypes[x] = TopTileType.RightCornerGrass; 
+                }
+                else
+                {
+                    if (leftOccupied && rightOccupied)
+                    {
+                        topTileTypes[x] = TopTileType.NormalGrass;
+                    }else if (!leftOccupied && rightOccupied)
+                    {
+                        topTileTypes[x] = TopTileType.LeftCornerGrass;
+                    }else if (leftOccupied && !rightOccupied)
+                    {
+                        topTileTypes[x] = TopTileType.RightCornerGrass;
+                    }
+                    else
+                    {
+                        //special tile
+                        topTileTypes[x] = TopTileType.NormalGrass;
+                    }
+                }
+            }
+            return topTileTypes;
+        }
+
         private void RenderTiles(int[] heights, TopTileType[] topTileTypes)
         {
             int width = settings.Width;
@@ -97,6 +154,19 @@ namespace BasicPlatformer.Generators
                 int H = heights[x];
                 TileBase topTile = settings.GrassTile;
                 
+                //Select top tile variant based on the corner assignment
+                switch (topTileTypes[x])
+                {
+                    case TopTileType.NormalGrass:
+                        topTile = settings.GrassTile;
+                        break;
+                    case TopTileType.LeftCornerGrass:
+                        topTile = settings.GrassLeftTile;
+                        break;
+                    case TopTileType.RightCornerGrass:
+                        topTile = settings.GrassRightTile;
+                        break;
+                }
                 //Place the top grass tile
                 Vector3Int pos = new Vector3Int(x, H, 0);
                 groundTilemap.SetTile(pos, topTile);
