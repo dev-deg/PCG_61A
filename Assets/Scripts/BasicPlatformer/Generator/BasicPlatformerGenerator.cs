@@ -1,5 +1,7 @@
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using BasicPlatformer.Settings;
 using Sirenix.OdinInspector;
@@ -40,8 +42,18 @@ namespace BasicPlatformer.Generators
             
             //PCG Algorithm
             
-            // Step 1. Randomise Terrain
-            int[] heights = GenerateHeights();
+            // Step 1A. Randomise Terrain
+            int[] sectionIDs;
+            int[] heights = GenerateHeights(out sectionIDs);
+            
+            // Step 1B. Mark water sections and adjust adjacent sections
+            bool[] isWater = MarkWaterSections(sectionIDs);
+
+            //TODO: Add an additional step to modify the current terrain to force the sections adjacent to water to be the same height
+            //Use a hashset as an example
+            
+            //TODO: Change the adjance grass tiles to corners
+
             // Step 2. Determine Corner Placement
             TopTileType[] topTileTypes = DetermineCornerTiles(heights);
             // Step 3. Render the terrain
@@ -50,11 +62,14 @@ namespace BasicPlatformer.Generators
             RenderSkyBackground(heights);
         }
 
-        private int[] GenerateHeights()
+        private int[] GenerateHeights(out int[] sectionIDs)
         {
+            System.Random rng = new System.Random(settings.Seed);
+            
             int width = settings.Width;
             int[] heights = new int[settings.Width];
-            System.Random rng = new System.Random(settings.Seed);
+            sectionIDs = new int[width];
+            int currentSection = 0;
             
             int minSurface = settings.MinSurfaceHeight;
             int maxSurface = settings.MaxSurfaceHeight;
@@ -66,7 +81,6 @@ namespace BasicPlatformer.Generators
             int i = 0;
             while (i < width)
             {
-                //TODO: Generate the heights
                 int remaining = width - i;
                 
                 //Generate a random Width
@@ -78,15 +92,79 @@ namespace BasicPlatformer.Generators
                 {
                     int delta = rng.Next(-maxHeightVariation, maxHeightVariation + 1);
                     currentHeight = Mathf.Clamp(heights[i - 1] + delta, minSurface, maxSurface);
+                    currentSection++;
                 }
 
                 for (int j = 0; j < sectionWidth && i < width; j++)
                 {
                     heights[i] = currentHeight;
+                    sectionIDs[i] = currentSection;
                     i++;
                 }
             }
             return heights;
+        }
+
+        private bool[] MarkWaterSections(int[] sectionIDs)
+        {
+            int width = sectionIDs.Length;
+            bool[] isWater = new bool[width];
+
+            //Building a dictionary mapping sectionID to its min and max col indices
+            Dictionary<int, (int min, int max)> sectionBounds = new Dictionary<int, (int min, int max)>();
+            for (int i = 0; i < width; i++)
+            {
+                int s = sectionIDs[i];
+                if (!sectionBounds.ContainsKey(s))
+                {
+                    sectionBounds[s] = (i, i);
+                }
+                else
+                {
+                    sectionBounds[s] = (Math.Min(sectionBounds[s].min, i), Math.Max(sectionBounds[s].max, i));
+                }
+            }
+            
+            //Determine the maximum section ID.
+            int maxSection = -1;
+            for (int i = 0; i < sectionIDs.Length; i++)
+            {
+                if (sectionIDs[i] > maxSection)
+                    maxSection = sectionIDs[i];
+            }
+            
+            //Adding a rule - water does not spawn in the first and last sections
+            List<int> candidateSections = new List<int>();
+            for (int sec = 1; sec < maxSection; sec++)
+            {
+                candidateSections.Add(sec);
+            }
+            candidateSections.Sort((a,b) => sectionBounds[a].min.CompareTo(sectionBounds[b].min));
+
+            System.Random rng = new System.Random(settings.Seed + 12345);
+            double chance = settings.WaterSpawnChance;
+            //Limiting one possible water spawn per 50 tiles
+            int lastWaterEnd = -50;
+            foreach (int sec in candidateSections)
+            {
+                int start = sectionBounds[sec].min;
+                int end = sectionBounds[sec].max;
+                if (start - lastWaterEnd >= 50)
+                {
+                    double roll = rng.NextDouble();
+                    if (roll < chance)
+                    {
+                        //Mark all columns in this section as water
+                        for (int i = 0; i < width; i++)
+                        {
+                            if (sectionIDs[i] == sec)
+                                isWater[i] = true;
+                        }
+                        lastWaterEnd = end;
+                    }
+                }
+            }
+            return isWater;
         }
 
         private TopTileType[] DetermineCornerTiles(int[] heights)
