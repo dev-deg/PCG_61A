@@ -34,30 +34,54 @@ namespace BasicPlatformer.Generators
             if (groundTilemap == null)
                 groundTilemap = GetComponent<Tilemap>();
         }
-        
+
         [Button("Generate Terrain")]
         public void GenerateTerrain()
         {
             ResetTerrain();
-            
+
             //PCG Algorithm
-            
+
             // Step 1A. Randomise Terrain
             int[] sectionIDs;
             int[] heights = GenerateHeights(out sectionIDs);
-            
+
             // Step 1B. Mark water sections and adjust adjacent sections
             bool[] isWater = MarkWaterSections(sectionIDs);
 
-            //TODO: Add an additional step to modify the current terrain to force the sections adjacent to water to be the same height
-            //Use a hashset as an example
-            
-            //TODO: Change the adjance grass tiles to corners
+
+            //Add an additional step to modify the current terrain to force the sections adjacent to water to be the same height
+            HashSet<int> waterSectionIDs = new HashSet<int>();
+            for (int i = 0; i < sectionIDs.Length; i++)
+            {
+                if (isWater[i])
+                    waterSectionIDs.Add(sectionIDs[i]);
+            }
+
+            foreach (int waterSec in waterSectionIDs)
+            {
+                //Getting the water section's height
+                int waterHeight = 0;
+                for (int i = 0; i < heights.Length; i++)
+                {
+                    if (sectionIDs[i] == waterSec)
+                        waterHeight = heights[i];
+                        break;
+                }
+                //Adjust cols in the adjacent section
+                for (int i = 0; i < heights.Length; i++)
+                {
+                    if (sectionIDs[i] == waterSec - 1 || sectionIDs[i] == waterSec + 1)
+                        heights[i] = waterHeight;
+                }
+            }
 
             // Step 2. Determine Corner Placement
-            TopTileType[] topTileTypes = DetermineCornerTiles(heights);
+            TopTileType[] topTileTypes = DetermineCornerTiles(heights, isWater);
+            
             // Step 3. Render the terrain
             RenderTiles(heights, topTileTypes);
+            
             // Step 4. Render the background
             RenderSkyBackground(heights);
         }
@@ -167,7 +191,7 @@ namespace BasicPlatformer.Generators
             return isWater;
         }
 
-        private TopTileType[] DetermineCornerTiles(int[] heights)
+        private TopTileType[] DetermineCornerTiles(int[] heights, bool[] isWater)
         {
             int width = heights.Length;
             int dirtDepth = settings.DirtDepth;
@@ -175,19 +199,27 @@ namespace BasicPlatformer.Generators
 
             for (int x = 0; x < width; x++)
             {
+                //If this column is water, mark it
+                if (isWater[x])
+                {
+                    topTileTypes[x] = TopTileType.Water;
+                    continue;
+                }
+                
                 int H = heights[x];
                 bool leftOccupied = false;
                 bool rightOccupied = false;
                 
-                //Checking the left neighbour
-                if (x > 0)
+                
+                //Checking the left neighbour (if not water)
+                if (x > 0 && !isWater[x - 1])
                 {
                     int leftTop = heights[x - 1];
                     leftOccupied = (H >= leftTop - dirtDepth) && (H <= leftTop);
                 }
                 
-                //Checking the right neighbour
-                if (x < width-1)
+                //Checking the right neighbour (if not water)
+                if (x < width-1 && !isWater[x + 1])
                 {
                     int rightTop = heights[x + 1];
                     rightOccupied = (H >= rightTop - dirtDepth) && (H <= rightTop);
@@ -245,6 +277,9 @@ namespace BasicPlatformer.Generators
                         break;
                     case TopTileType.RightCornerGrass:
                         topTile = settings.GrassRightTile;
+                        break;
+                    case TopTileType.Water:
+                        topTile = settings.WaterTile;
                         break;
                 }
                 //Place the top grass tile
