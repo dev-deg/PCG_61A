@@ -65,8 +65,11 @@ namespace BasicPlatformer.Generators
                 for (int i = 0; i < heights.Length; i++)
                 {
                     if (sectionIDs[i] == waterSec)
+                    {                        
                         waterHeight = heights[i];
                         break;
+                    }
+
                 }
                 //Adjust cols in the adjacent section
                 for (int i = 0; i < heights.Length; i++)
