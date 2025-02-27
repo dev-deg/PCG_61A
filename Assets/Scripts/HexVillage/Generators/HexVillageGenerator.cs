@@ -1,3 +1,4 @@
+using Sirenix.OdinInspector;
 using UnityEngine;
 
 namespace HexVillage.Generators
@@ -26,6 +27,12 @@ namespace HexVillage.Generators
             _villageParent = transform;
             GridGenerator = GetComponent<HexGridGenerator>();
             GridGenerator.Initialise(settings);
+        }
+
+        [Button("Generate Village")]
+        public void GenerateVillage()
+        {
+            GridGenerator.GenerateGrid();
         }
     }
 }
