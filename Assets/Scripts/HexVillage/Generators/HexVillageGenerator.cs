@@ -54,9 +54,15 @@ namespace HexVillage.Generators
                         Vector2Int gridPosition = new Vector2Int(x, y);
                         
                         //We need to check the tile type at this current position
-                        string tileName = GetTileTypeAtPos(gridPosition);
-                        Debug.Log(tileName);
-
+                        string tileTypeAtPos = GetTileTypeAtPos(gridPosition);
+                        if (tileTypeAtPos == "grass" || tileTypeAtPos == "dirt")
+                        {
+                            //Get a random building
+                            GameObject building = settings.Buildings[rng.Next(0, settings.Buildings.Count)];
+                            Vector3 worldPos = GridGenerator.CalculateHexPosition(x, y, settings.TileSize);
+                            GameObject buildingInstance = Instantiate(building, worldPos, Quaternion.identity, _villageParent);
+                            buildingInstance.name = $"Building_{x}_{y}";
+                        }
                     }
                 }
             }
