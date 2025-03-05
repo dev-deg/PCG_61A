@@ -75,21 +75,35 @@ namespace HexVillage.Generators
         private GameObject GetTerrainTile(string type = "grass")
         {
             type = type.ToLower();
-            List<GameObject> candidates = new List<GameObject>();
+            List<Tuple<GameObject, float>> candidates = new List<Tuple<GameObject, float>>();
+            float totalWeight = 0;
+    
             foreach (GameObject tile in _settings.Terrain)
             {
-                if (tile.name.ToLower() == type)
-                {
-                    return tile;
-                }
                 if (tile.name.Contains(type))
                 {
-                    candidates.Add(tile);
+                    //10% chance of spawning a different tile
+                    float weight = 1f;
+                    if (tile.name == type) weight = 10f;
+                    candidates.Add(Tuple.Create(tile, weight));
+                    totalWeight += weight;
                 }
             }
+
             if (candidates.Count > 0)
             {
-                return candidates[_rng.Next(0, candidates.Count)];
+                float random = (float)(_rng.NextDouble() * totalWeight);
+                float cumulative = 0;
+        
+                foreach (var candidate in candidates)
+                {
+                    cumulative += candidate.Item2;
+                    if (random <= cumulative)
+                    {
+                        return candidate.Item1;
+                    }
+                }
+                return candidates[^1].Item1; // Fallback to last item
             }
             return null;
         }

@@ -57,11 +57,32 @@ namespace HexVillage.Generators
                         string tileTypeAtPos = GetTileTypeAtPos(gridPosition);
                         if (tileTypeAtPos == "grass" || tileTypeAtPos == "dirt")
                         {
+          
+                            //Delete previous building
+                            DestroyImmediate(GridGenerator.HexTiles[gridPosition]);
+                            
                             //Get a random building
                             GameObject building = settings.Buildings[rng.Next(0, settings.Buildings.Count)];
                             Vector3 worldPos = GridGenerator.CalculateHexPosition(x, y, settings.TileSize);
-                            GameObject buildingInstance = Instantiate(building, worldPos, Quaternion.identity, _villageParent);
+                            
+                            //Set a random rotation
+                            //Option 1
+                            // int[] potentialAngles = { 0, 60, 120, 180, 240, 300 };
+                            // float rotAngle = potentialAngles[rng.Next(0, 5)];
+                            
+                            //Option 2
+                            //float rotAngle = rng.Next(0, 6) * 60;
+                            
+                            //Option 3
+                            float rotAngle =(((x * 7 + y * 11) % 6) * 60f);
+                            Quaternion rot = Quaternion.Euler(0, rotAngle, 0);
+                            
+                            //Spawning the building
+                            GameObject buildingInstance = Instantiate(building, worldPos, rot, _villageParent);
                             buildingInstance.name = $"Building_{x}_{y}";
+                            
+                            //Updating the dictionary
+                            GridGenerator.HexTiles[gridPosition] = buildingInstance;
                         }
                     }
                 }
