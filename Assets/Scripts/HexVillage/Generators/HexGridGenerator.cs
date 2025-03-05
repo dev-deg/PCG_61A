@@ -5,6 +5,7 @@ using UnityEngine;
 
 namespace HexVillage.Generators
 {
+    [ExecuteAlways]
     public class HexGridGenerator : MonoBehaviour
     {
         private HexVillageSettings _settings;
@@ -18,17 +19,18 @@ namespace HexVillage.Generators
 
         public void GenerateGrid()
         {
+            Initialise(_settings);
             //---- Island Generation Parametes ----
             float noiseScale = 0.3f;
             float noiseWeight = 0.2f;
             
-            float waterThreshold = 0.8f;
-            float sandThreshold = 0.7f;
-            float dirtThreshold = 0.6f;
+            float waterThreshold = 0.7f;
+            float sandThreshold = 0.6f;
+            float dirtThreshold = 0.5f;
             //Rest is grass
             
             // Determine the grid's center and max distance 
-            Vector2 center = new Vector2(_settings.GridWidth, _settings.GridHeight);
+            Vector2 center = new Vector2(_settings.GridWidth /2f, _settings.GridHeight /2f);
             float maxDist = center.magnitude;
             
             for (int x = 0; x < _settings.GridWidth; x++)

@@ -154,8 +154,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   settings:
-    gridWidth: 20
-    gridHeight: 20
+    gridWidth: 40
+    gridHeight: 40
     tileSize: 0.58
     randomSeed: 123
     tileDatabase: {fileID: 11400000, guid: f68bfe27b1ad5ff42a384f90ed836fb9, type: 2}
