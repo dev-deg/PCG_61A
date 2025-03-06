@@ -82,8 +82,8 @@ namespace HexVillage.Generators
             {
                 if (tile.name.Contains(type))
                 {
-                    //10% chance of spawning a different tile
-                    float weight = 1f;
+                    //5% chance of spawning a different tile
+                    float weight = 0.5f;
                     if (tile.name == type) weight = 10f;
                     candidates.Add(Tuple.Create(tile, weight));
                     totalWeight += weight;

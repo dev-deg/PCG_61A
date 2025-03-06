@@ -3,6 +3,7 @@ using UnityEngine;
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using Unity.VisualScripting.Dependencies.NCalc;
 
 namespace HexVillage.Generators
 {
@@ -39,10 +40,48 @@ namespace HexVillage.Generators
             //1.Generate the Grid
             GridGenerator.GenerateGrid();
             
-            //2. Spawn the buildings
+            //2. Fill the water holes
+            FillWaterHoles();
+            
+            //3. Spawn the buildings
             SpawnBuildings();
         }
 
+        private void FillWaterHoles()
+        {
+            System.Random rng = new System.Random(settings.RandomSeed + 1283);
+            for (int x = 0; x < settings.GridWidth; x++)
+            {
+                for (int y = 0; y < settings.GridHeight; y++)
+                {
+                    Vector2Int gridPosition = new Vector2Int(x, y);
+                    string tileTypeAtPos = GetTileTypeAtPos(gridPosition);
+                    //if the tile is a water and all adjacent tiles are land tiles
+                    if (tileTypeAtPos.Contains("water") && AreAllAdjacentTilesLand(gridPosition))
+                    {
+                        //fill the hole by spawning a building
+                        SpawnBuildingAtPosition(gridPosition, x, y, rng);   
+                    }
+                }
+            }
+        }
+        
+        private void SpawnBuildingAtPosition(Vector2Int gridPosition, int x, int y, System.Random rng)
+        {
+            GameObject building = settings.Buildings[rng.Next(0, settings.Buildings.Count)];
+            Vector3 worldPos = GridGenerator.CalculateHexPosition(x, y, settings.TileSize);
+
+            float rotAngle = (((x * 7 + y * 11) % 6) * 60f);
+            Quaternion rot = Quaternion.Euler(0, rotAngle, 0);
+
+            // Spawning the building
+            GameObject buildingInstance = Instantiate(building, worldPos, rot, _villageParent);
+            buildingInstance.name = $"Building_{x}_{y}";
+
+            // Updating the dictionary
+            GridGenerator.HexTiles[gridPosition] = buildingInstance;
+        }
+        
         private void SpawnBuildings()
         {
             System.Random rng = new System.Random(settings.RandomSeed + 1283);
@@ -58,32 +97,10 @@ namespace HexVillage.Generators
                         string tileTypeAtPos = GetTileTypeAtPos(gridPosition);
                         if (tileTypeAtPos == "grass" || tileTypeAtPos == "dirt")
                         {
-          
                             //Delete previous building
                             DestroyImmediate(GridGenerator.HexTiles[gridPosition]);
-                            
-                            //Get a random building
-                            GameObject building = settings.Buildings[rng.Next(0, settings.Buildings.Count)];
-                            Vector3 worldPos = GridGenerator.CalculateHexPosition(x, y, settings.TileSize);
-                            
-                            //Set a random rotation
-                            //Option 1
-                            // int[] potentialAngles = { 0, 60, 120, 180, 240, 300 };
-                            // float rotAngle = potentialAngles[rng.Next(0, 5)];
-                            
-                            //Option 2
-                            //float rotAngle = rng.Next(0, 6) * 60;
-                            
-                            //Option 3
-                            float rotAngle =(((x * 7 + y * 11) % 6) * 60f);
-                            Quaternion rot = Quaternion.Euler(0, rotAngle, 0);
-                            
-                            //Spawning the building
-                            GameObject buildingInstance = Instantiate(building, worldPos, rot, _villageParent);
-                            buildingInstance.name = $"Building_{x}_{y}";
-                            
-                            //Updating the dictionary
-                            GridGenerator.HexTiles[gridPosition] = buildingInstance;
+                            SpawnBuildingAtPosition(gridPosition, x, y, rng); 
+
                         }
                     }
                 }
@@ -133,6 +150,22 @@ namespace HexVillage.Generators
                 neighbours.Add(new Vector2Int(x, y + 1));
             }
             return neighbours;        }
+
+        //Solve the holes problem
+        private bool AreAllAdjacentTilesLand(Vector2Int coords)
+        {
+            List<Vector2Int> neighbours = GetHexNeighbours(coords);
+
+            foreach (Vector2Int n in neighbours)
+            {
+                string tileType = GetTileTypeAtPos(n);
+                if(tileType == "water")
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
         
         [Button("Clear Village")]
         public void ClearVillage()
