@@ -1,6 +1,7 @@
 using Sirenix.OdinInspector;
 using UnityEngine;
 using System;
+using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
 namespace HexVillage.Generators
@@ -97,6 +98,41 @@ namespace HexVillage.Generators
             var match = Regex.Match(tileName, @"HexTile_\d+_\d+_(\w+)");
             return match.Success ? match.Groups[1].Value : string.Empty;
         }
+        
+        private List<Vector2Int> GetHexNeighbours(Vector2Int coords)
+        {
+            //The selected code is part of a method that calculates the neighboring
+            //hex tiles for a given hex tile in a hexagonal grid.
+            //The method takes the coordinates of the current hex tile
+            //as input and returns a list of coordinates representing its neighbors.
+            //The hexagonal grid is represented using an offset coordinate system,
+            //where the rows are staggered. This means that the neighbors of a hex tile
+            //depend on whether the row index (y) is even or odd.
+            
+            List<Vector2Int> neighbours = new List<Vector2Int>();
+            int x = coords.x, y = coords.y;
+            //Offset is going to differ for odd and even rows
+            //For even rows (y % 2 == 0), the neighbors are calculated as follows:
+            if (y % 2 == 0)
+            {
+                neighbours.Add(new Vector2Int(x, y - 1));
+                neighbours.Add(new Vector2Int(x + 1, y - 1));
+                neighbours.Add(new Vector2Int(x - 1, y));
+                neighbours.Add(new Vector2Int(x + 1, y));
+                neighbours.Add(new Vector2Int(x, y + 1));
+                neighbours.Add(new Vector2Int(x + 1, y + 1 ));
+            }
+            else
+            //For odd rows, the neighbors are calculated differently:
+            {
+                neighbours.Add(new Vector2Int(x - 1, y - 1));
+                neighbours.Add(new Vector2Int(x, y - 1));
+                neighbours.Add(new Vector2Int(x - 1, y));
+                neighbours.Add(new Vector2Int(x + 1, y));
+                neighbours.Add(new Vector2Int(x - 1, y + 1));
+                neighbours.Add(new Vector2Int(x, y + 1));
+            }
+            return neighbours;        }
         
         [Button("Clear Village")]
         public void ClearVillage()
