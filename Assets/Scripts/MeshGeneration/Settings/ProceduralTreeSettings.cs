@@ -1,9 +1,11 @@
+using System;
 using UnityEngine;
 using Sirenix.OdinInspector;
 
 namespace MeshGeneration.Settings
 {
-    public class ProceduralTreeSettings : MonoBehaviour
+    [Serializable]
+    public class ProceduralTreeSettings
     {
         [FoldoutGroup("Trunk Settings")] [SerializeField, Range(1f, 20f)]
         private float trunkHeight = 5f;
