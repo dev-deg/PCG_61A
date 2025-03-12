@@ -1,4 +1,4 @@
-﻿using System;
+﻿// BasicTreeGenerator.cs
 using UnityEngine;
 using MeshGeneration.Settings;
 using Sirenix.OdinInspector;
@@ -12,18 +12,9 @@ namespace MeshGeneration.Generators
         [SerializeField] private ProceduralTreeSettings settings;
         private MeshFilter _meshFilter;
         private MeshRenderer _meshRenderer;
-        private System.Random _random;
-
-        private void Awake()
-        {
-            EnsureComponents();
-        }
-
-        private void OnValidate()
-        {
-            _meshFilter = GetComponent<MeshFilter>();
-            _meshRenderer = GetComponent<MeshRenderer>();
-        }
+        private System.Random _rng;
+        private void Awake() => EnsureComponents();
+        private void OnValidate() => EnsureComponents();
 
         private void EnsureComponents()
         {
@@ -31,127 +22,69 @@ namespace MeshGeneration.Generators
             _meshRenderer = GetComponent<MeshRenderer>();
         }
 
-        [Button("Generate Tree")]
+        [Button("Spawn Trees")]
         public void GenerateTree()
         {
-            _random = new System.Random(settings.RandomSeed);
-            
-            // Create separate meshes for trunk and leaves
-            Mesh trunkMesh = GenerateTrunkMesh();
-            Mesh[] leafMeshes = GenerateLeafMeshes();
-
-            // Combine all meshes
-            CombineInstance[] combines = new CombineInstance[1 + leafMeshes.Length];
-            combines[0].mesh = trunkMesh;
-            combines[0].transform = Matrix4x4.identity;
-
-            for (int i = 0; i < leafMeshes.Length; i++)
-            {
-                combines[i + 1].mesh = leafMeshes[i];
-                combines[i + 1].transform = Matrix4x4.identity;
-            }
-
-            Mesh finalMesh = new Mesh();
-            finalMesh.CombineMeshes(combines, false);
-            
-            _meshFilter.mesh = finalMesh;
-            
-            // Set materials
-            _meshRenderer.sharedMaterials = new[] { settings.BarkMaterial, settings.LeafMaterial };
+            ClearTrees();
+            _rng = new System.Random(settings.RandomSeed);
+            GameObject procTree = GenerateProcedureTree();
+            procTree.transform.parent = transform;
         }
-
-        private Mesh GenerateTrunkMesh()
+        
+        public GameObject GenerateProcedureTree()
         {
-            const int segments = 8;
-            float radius = 0.5f;
+            GameObject treeParent = new GameObject("Procedural Tree");
             
-            Vector3[] vertices = new Vector3[(segments + 1) * 2];
-            int[] triangles = new int[segments * 6];
-            
-            // Create vertices
-            for (int i = 0; i <= segments; i++)
+            GameObject trunk = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            trunk.name = "Trunk";
+            trunk.transform.SetParent(treeParent.transform);
+            float trunkHeight = GetRandomFloatInRange(settings.TrunkHeight);
+            trunk.transform.localScale = new Vector3(0.3f, trunkHeight, 0.3f);
+            trunk.transform.localPosition = new Vector3(0f, 0.5f, 0f);
+            if (settings.BarkMaterial != null)
             {
-                float angle = i * (2 * Mathf.PI / segments);
-                float x = Mathf.Cos(angle) * radius;
-                float z = Mathf.Sin(angle) * radius;
-                
-                vertices[i] = new Vector3(x, 0, z);
-                vertices[i + segments + 1] = new Vector3(x, settings.TrunkHeight, z);
-            }
-            
-            // Create triangles
-            int tri = 0;
-            for (int i = 0; i < segments; i++)
-            {
-                triangles[tri++] = i;
-                triangles[tri++] = i + segments + 1;
-                triangles[tri++] = (i + 1) % segments;
-                
-                triangles[tri++] = i + segments + 1;
-                triangles[tri++] = ((i + 1) % segments) + segments + 1;
-                triangles[tri++] = (i + 1) % segments;
+                trunk.GetComponent<Renderer>().sharedMaterial = settings.BarkMaterial;
             }
 
-            Mesh mesh = new Mesh();
-            mesh.vertices = vertices;
-            mesh.triangles = triangles;
-            mesh.RecalculateNormals();
-            return mesh;
-        }
-
-        private Mesh[] GenerateLeafMeshes()
-        {
-            const int leafCount = 12;
-            Mesh[] leafMeshes = new Mesh[leafCount];
-            
-            for (int i = 0; i < leafCount; i++)
+            float leafBasePosition = trunk.transform.localPosition.y + 0.5f;
+            //spawn 3 leave blocks
+            for (int i = 0; i < 3; i++)
             {
-                float height = (float)_random.NextDouble() * settings.TrunkHeight * 0.7f + settings.TrunkHeight * 0.3f;
-                float scale = Mathf.Lerp(settings.LeafScale.x, settings.LeafScale.y, (float)_random.NextDouble());
-                float angle = (float)_random.NextDouble() * 360f;
+                //To ensurer that the leave are scaling in size
+                float baseXZ = 0.9f - (0.2f * i) + GetRandomFloatInRange(settings.LeafScaleWidth);
+                float baseY = 0.6f - (0.1f * i) + GetRandomFloatInRange(settings.LeafScaleHeight);
                 
-                Vector3[] vertices = new Vector3[4];
-                vertices[0] = new Vector3(-0.5f, 0, 0) * scale;
-                vertices[1] = new Vector3(0.5f, 0, 0) * scale;
-                vertices[2] = new Vector3(-0.5f, 1, 0) * scale;
-                vertices[3] = new Vector3(0.5f, 1, 0) * scale;
+                GameObject leaf = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                leaf.name = $"Leaf_{i}";
+                leaf.transform.SetParent(treeParent.transform);
+                leaf.transform.localScale = new Vector3(baseXZ, baseY, baseXZ);
 
-                int[] triangles = { 0, 2, 1, 2, 3, 1 };
-                Vector2[] uvs = {
-                    new Vector2(0, 0),
-                    new Vector2(1, 0),
-                    new Vector2(0, 1),
-                    new Vector2(1, 1)
-                };
-
-                Mesh leafMesh = new Mesh();
-                leafMesh.vertices = vertices;
-                leafMesh.triangles = triangles;
-                leafMesh.uv = uvs;
+                float halfLeafHeight = baseY * 0.5f;
+                float centerY = leafBasePosition + halfLeafHeight;
+                leaf.transform.localPosition = new Vector3(0f, centerY, 0f);
                 
-                // Transform the leaf
-                Vector3 position = new Vector3(0, height, 0);
-                Quaternion rotation = Quaternion.Euler(30f, angle, 0);
-                Vector3[] newVertices = new Vector3[vertices.Length];
-                for (int j = 0; j < vertices.Length; j++)
+                //updates the current leaf spawn position
+                leafBasePosition = centerY + halfLeafHeight;
+                
+                if (settings.LeafMaterial != null)
                 {
-                    newVertices[j] = rotation * vertices[j] + position;
+                    leaf.GetComponent<Renderer>().sharedMaterial = settings.LeafMaterial;
                 }
-                leafMesh.vertices = newVertices;
-                leafMesh.RecalculateNormals();
-                
-                leafMeshes[i] = leafMesh;
             }
-
-            return leafMeshes;
+            
+            return treeParent;
         }
 
-        [Button("Clear Tree")]
-        public void ClearTree()
+        private float GetRandomFloatInRange(Vector2 range)
         {
-            if (_meshFilter != null && _meshFilter.sharedMesh != null)
+            return (float)(_rng.NextDouble() * (range.y - range.x) + range.x);
+        }
+        [Button("Clear Trees")]
+        public void ClearTrees()
+        {
+            for (int i = transform.childCount - 1; i >= 0; i--)
             {
-                DestroyImmediate(_meshFilter.sharedMesh);
+                DestroyImmediate(transform.GetChild(i).gameObject);
             }
         }
     }

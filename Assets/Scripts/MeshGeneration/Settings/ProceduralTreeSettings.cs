@@ -7,11 +7,14 @@ namespace MeshGeneration.Settings
     [Serializable]
     public class ProceduralTreeSettings
     {
-        [FoldoutGroup("Trunk Settings")] [SerializeField, Range(1f, 20f)]
-        private float trunkHeight = 5f;
+        [FoldoutGroup("Trunk Settings")] [SerializeField, MinMaxSlider(1, 5f)]
+        private Vector2 trunkHeight = new Vector2(1,2);
 
-        [FoldoutGroup("Leaf Settings")] [SerializeField, MinMaxSlider(0.1f, 2f)]
-        private Vector2 leafScale = new Vector2(0, 1f);
+        [FoldoutGroup("Leaf Settings")] [SerializeField, MinMaxSlider(-0.1f, 0.1f)]
+        private Vector2 leafScaleWidth = new Vector2(-0.05f, 0.05f);
+        
+        [FoldoutGroup("Leaf Settings")] [SerializeField, MinMaxSlider(-0.1f, 0.1f)]
+        private Vector2 leafScaleHeight = new Vector2(-0.05f, 0.05f);
 
         [FoldoutGroup("Generation Settings")] [SerializeField]
         private int randomSeed = 12345;
@@ -22,10 +25,12 @@ namespace MeshGeneration.Settings
         [FoldoutGroup("Material Settings")] [SerializeField]
         private Material leafMaterial;
 
-        public float TrunkHeight => trunkHeight;
+        public Vector2 TrunkHeight => trunkHeight;
 
-        public Vector2 LeafScale => leafScale;
+        public Vector2 LeafScaleWidth => leafScaleWidth;
 
+        public Vector2 LeafScaleHeight => leafScaleHeight;
+        
         public int RandomSeed => randomSeed;
 
         public Material BarkMaterial => barkMaterial;
