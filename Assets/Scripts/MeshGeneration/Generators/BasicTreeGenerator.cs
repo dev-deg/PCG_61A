@@ -1,12 +1,13 @@
 ﻿// BasicTreeGenerator.cs
 using UnityEngine;
 using MeshGeneration.Settings;
+using MeshGeneration.Utilities;
 using Sirenix.OdinInspector;
 
 namespace MeshGeneration.Generators
 {
+    
     [ExecuteAlways]
-    [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
     public class BasicTreeGenerator : MonoBehaviour
     {
         [SerializeField] private ProceduralTreeSettings settings;
@@ -87,5 +88,14 @@ namespace MeshGeneration.Generators
                 DestroyImmediate(transform.GetChild(i).gameObject);
             }
         }
+        
+        
+        [Button("Export Tree to OBJ")]
+        #if UNITY_EDITOR
+        private void ExportTreeToOBJ()
+        {
+            MeshExporter.ExportTreeToOBJ(gameObject);
+        }
+        #endif
     }
 }
