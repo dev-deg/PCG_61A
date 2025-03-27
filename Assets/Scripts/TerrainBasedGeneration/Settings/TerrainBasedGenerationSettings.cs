@@ -42,7 +42,7 @@ namespace TerrainBasedGeneration.Settings
         [Tooltip("Represents the number of layers of noise that will be combined to create the final noise. Higher values result in more detailed noise patterns.")]
         [Range(1,8)]
         [SerializeField]
-        private float octaves = 4f;
+        private int octaves = 4;
         
         [FoldoutGroup("Noise Settings")]
         [Tooltip("Controls the amplitude of each octave. Lower values make higher octaves contribute less to the final noise, resulting in smoother noise.")]
@@ -116,7 +116,7 @@ namespace TerrainBasedGeneration.Settings
 
         public float NoiseScale => noiseScale;
 
-        public float Octaves => octaves;
+        public int Octaves => octaves;
 
         public float Persistance => persistance;
 

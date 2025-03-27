@@ -29,6 +29,7 @@ namespace TerrainBasedGeneration.Utilities
             
             // Generate fractal noise using the NoiseUtility from ProceduralGeneration
             return NoiseUtility.GenerateFractalNoise2D(
+                seed,
                 resolution, resolution, 
                 scale, octaves, 
                 persistence, lacunarity, 
